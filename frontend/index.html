@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaPac | Seguros Tecnológicos para Universitarios</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0f172a; --accent-color: #2563eb; --accent-hover: #1d4ed8;
+            --bg-color: #f8fafc; --card-bg: #ffffff; --text-main: #1e293b; --text-muted: #64748b;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); }
+        .panel, .subvista-cliente, .subvista-admin { display: none; }
+        .subvista-cliente.active, .subvista-admin.active { display: block; animation: fadeIn 0.25s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 16px 24px; border-radius: 8px; color: white; font-weight: 500; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-md); transform: translateX(120%); transition: transform 0.3s ease; }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background-color: var(--success); }
+        .toast.error { background-color: var(--danger); }
+        .auth-wrapper { display: flex; min-height: 100vh; }
+        .auth-brand { flex: 1; background: linear-gradient(135deg, var(--primary-color) 0%, #1e3a8a 100%); color: white; display: flex; flex-direction: column; justify-content: center; padding: 60px; position: relative; overflow: hidden; }
+        .auth-brand::after { content: ''; position: absolute; width: 600px; height: 600px; background: rgba(255,255,255,0.05); border-radius: 50%; top: -100px; right: -200px; }
+        .auth-brand h1 { font-size: 3rem; margin-bottom: 1rem; font-weight: 700; z-index: 1; }
+        .auth-brand p { font-size: 1.2rem; color: #cbd5e1; max-width: 420px; line-height: 1.6; z-index: 1; }
+        .auth-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; background-color: var(--card-bg); }
+        .auth-form-container { width: 100%; max-width: 420px; }
+        .auth-form-container h2 { font-size: 1.8rem; margin-bottom: 8px; color: var(--primary-color); }
+        .auth-form-container p.subtitle { color: var(--text-muted); margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 8px; color: var(--text-main); }
+        .input-icon { position: absolute; left: 14px; top: 38px; color: var(--text-muted); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px 12px 40px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background: var(--bg-color); }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); background: var(--card-bg); }
+        .form-group select, .form-group textarea { padding-left: 16px; }
+        .btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; width: 100%; padding: 12px 24px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { background-color: var(--accent-hover); }
+        .btn-sm { padding: 8px 14px; font-size: 0.82rem; width: auto; }
+        .btn-success { background-color: var(--success); }
+        .btn-success:hover { background-color: #059669; }
+        .btn-danger-solid { background-color: var(--danger); }
+        .btn-danger-solid:hover { background-color: #dc2626; }
+        .btn-danger { background-color: transparent; color: var(--danger); }
+        .btn-danger:hover { background-color: #fef2f2; }
+        .toggle-link { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; }
+        .toggle-link span { color: var(--accent-color); font-weight: 600; }
+        .dashboard-wrapper { display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 260px; background-color: var(--primary-color); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; font-size: 1.5rem; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header i { color: var(--accent-color); }
+        .sidebar-nav { flex: 1; padding: 24px 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+        .nav-item { padding: 14px 24px; color: #cbd5e1; text-decoration: none; display: flex; align-items: center; gap: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; user-select: none; }
+        .nav-item:hover, .nav-item.active { background-color: rgba(255,255,255,0.08); color: white; border-left-color: var(--accent-color); }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { height: 70px; background-color: var(--card-bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+        .user-menu { display: flex; align-items: center; gap: 16px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--accent-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .content-area { flex: 1; padding: 32px; overflow-y: auto; }
+        .page-header { margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+        .page-header h2 { font-size: 1.7rem; color: var(--primary-color); }
+        .page-header p { color: var(--text-muted); margin-top: 4px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 28px; }
+        .kpi-card { background: var(--card-bg); padding: 22px; border-radius: 12px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); display: flex; align-items: center; gap: 18px; }
+        .kpi-icon { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+        .kpi-icon.blue { background: #eff6ff; color: var(--accent-color); }
+        .kpi-icon.green { background: #ecfdf5; color: var(--success); }
+        .kpi-icon.yellow { background: #fffbeb; color: var(--warning); }
+        .kpi-details h4 { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; margin-bottom: 4px; }
+        .kpi-details span { color: var(--text-main); font-size: 1.5rem; font-weight: 700; }
+        .dashboard-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; }
+        .devices-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
+        .card-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .card-header h3 { font-size: 1.05rem; color: var(--primary-color); display: flex; align-items: center; gap: 8px; }
+        .card-body { padding: 24px; }
+        .device-item-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 14px; transition: transform 0.15s; }
+        .device-item-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .device-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+        .device-title { display: flex; align-items: center; gap: 12px; }
+        .device-title i { font-size: 1.5rem; color: var(--accent-color); background: #eff6ff; padding: 12px; border-radius: 10px; }
+        .device-meta { font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); padding-top: 12px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-grid .form-group { margin-bottom: 0; }
+        .form-grid .form-group.full-width { grid-column: span 2; }
+        .empty-state { text-align: center; padding: 40px 20px; }
+        .empty-state i { font-size: 2.8rem; color: #cbd5e1; margin-bottom: 14px; }
+        .empty-state h4 { color: var(--text-main); margin-bottom: 6px; font-size: 1.05rem; }
+        .empty-state p { color: var(--text-muted); font-size: 0.88rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background-color: #f8fafc; padding: 12px 20px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+        td { padding: 16px 20px; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 0.92rem; }
+        .badge { padding: 5px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+        .badge.Pendiente, .badge.En-revision, .badge.Pendiente-de-pago { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .badge.Aprobada, .badge.Aprobado, .badge.Activa, .badge.Reembolsado, .badge.Activo { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .badge.Rechazada, .badge.Rechazado, .badge.Suspendida, .badge.Cancelada, .badge.Inactivo { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: none; align-items: center; justify-content: center; z-index: 9990; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        @media (max-width: 992px) {
+            .dashboard-grid, .form-grid { grid-template-columns: 1fr; }
+            .form-grid .form-group.full-width { grid-column: span 1; }
+            .auth-wrapper, .dashboard-wrapper { flex-direction: column; height: auto; min-height: 100vh; }
+            .sidebar { width: 100%; }
+            .sidebar-nav { flex-direction: row; overflow-x: auto; padding: 10px; }
+            .nav-item { white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; padding: 10px 16px; }
+            .nav-item:hover, .nav-item.active { border-left-color: transparent; border-bottom-color: var(--accent-color); }
+        }
+    </style>
+</head>
+<body>
+    <div id="toast-container"></div>
+
+    <div id="modal-detalle" class="modal-overlay" onclick="if(event.target===this) cerrarModal()">
+        <div class="card" style="width: 100%; max-width: 560px;">
+            <div class="card-header">
+                <h3 id="modal-titulo"><i class="fas fa-shield-alt"></i> Detalle</h3>
+                <button class="btn btn-danger btn-sm" onclick="cerrarModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="card-body" id="modal-cuerpo"></div>
+        </div>
+    </div>
+
+    <!-- PANEL 1: AUTENTICACIÓN -->
+    <div id="panel-auth" class="panel" style="display: block;">
+        <div class="auth-wrapper">
+            <div class="auth-brand">
+                <h1><i class="fas fa-shield-alt"></i> InstaPac</h1>
+                <p>La plataforma inteligente para proteger los dispositivos electrónicos de tu vida universitaria. Seguridad digital, tranquilidad real.</p>
+            </div>
+            <div class="auth-content">
+                <div id="caja-login" class="auth-form-container">
+                    <h2>Bienvenido de nuevo</h2>
+                    <p class="subtitle">Ingresa tus credenciales para acceder a tu panel.</p>
+                    <form id="formLogin">
+                        <div class="form-group">
+                            <label>Correo Electrónico / Usuario AD</label>
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="text" id="log-correo" placeholder="usuario@universidad.edu.pe" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña</label>
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="log-password" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" id="btn-submit-login" class="btn"><i class="fas fa-sign-in-alt"></i> Acceder a mi cuenta</button>
+                    </form>
+                    <div class="toggle-link" onclick="toggleAuth('registro')">¿Eres nuevo estudiante? <span>Solicita tu cuenta aquí</span></div>
+                </div>
+
+                <div id="caja-registro" class="auth-form-container" style="display: none;">
+                    <h2>Crear Cuenta</h2>
+                    <p class="subtitle">Registra tus datos estudiantiles para asegurar tus equipos.</p>
+                    <form id="formRegistro">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" id="reg-nombre" placeholder="Ej. Yan Pier Huayascachi" required>
+                        </div>
+                        <div class="form-grid" style="margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label>DNI</label>
+                                <i class="fas fa-id-card input-icon"></i>
+                                <input type="text" id="reg-dni" placeholder="8 dígitos" required maxlength="8">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono / Yape</label>
+                                <i class="fas fa-phone input-icon"></i>
+                                <input type="text" id="reg-telefono" placeholder="987654321" required>
+                            </div>
+                        </div>
+                        <div class="form-grid" style="margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label>Código Universitario</label>
+                                <i class="fas fa-graduation-cap input-icon"></i>
+                                <input type="text" id="reg-codigo" placeholder="Ej. 100130412" required minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label>Cuenta / Yape Reembolso</label>
+                                <i class="fas fa-wallet input-icon"></i>
+                                <input type="text" id="reg-cuenta" placeholder="Yape o CCI Bancario" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Institucional (.edu.pe / .edu)</label>
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" id="reg-correo" placeholder="alumno@cientifica.edu.pe" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña Segura</label>
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" required>
+                        </div>
+                        <button type="submit" class="btn"><i class="fas fa-user-plus"></i> Finalizar Registro</button>
+                    </form>
+                    <div class="toggle-link" onclick="toggleAuth('login')">¿Ya tienes una cuenta? <span>Inicia sesión</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 2: CLIENTE -->
+    <div id="panel-cliente" class="panel">
+        <div class="dashboard-wrapper">
+            <aside class="sidebar">
+                <div class="sidebar-header"><i class="fas fa-shield-alt"></i> InstaPac</div>
+                <div class="sidebar-nav">
+                    <div class="nav-item active" id="nav-resumen" onclick="cambiarVistaCliente('resumen')"><i class="fas fa-home"></i> Panel General</div>
+                    <div class="nav-item" id="nav-dispositivos" onclick="cambiarVistaCliente('dispositivos')"><i class="fas fa-laptop"></i> Mis Solicitudes</div>
+                    <div class="nav-item" id="nav-polizas" onclick="cambiarVistaCliente('polizas')"><i class="fas fa-file-contract"></i> Mis Pólizas</div>
+                    <div class="nav-item" id="nav-pagos" onclick="cambiarVistaCliente('pagos')"><i class="fas fa-credit-card"></i> Pagos</div>
+                    <div class="nav-item" id="nav-siniestros" onclick="cambiarVistaCliente('siniestros')"><i class="fas fa-exclamation-triangle"></i> Siniestros</div>
+                    <div class="nav-item" id="nav-perfil" onclick="cambiarVistaCliente('perfil')"><i class="fas fa-user-circle"></i> Mi Perfil</div>
+                </div>
+            </aside>
+            <main class="main-content">
+                <header class="topbar">
+                    <div style="font-weight: 600; color: var(--text-muted);">Portal de Asegurados</div>
+                    <div class="user-menu">
+                        <div class="avatar" id="user-avatar">YP</div>
+                        <span id="user-name-label" style="font-weight: 600;">Estudiante Universitario</span>
+                        <button onclick="cerrarSesion()" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Salir</button>
+                    </div>
+                </header>
+                <div class="content-area">
+                    <div id="vista-resumen" class="subvista-cliente active">
+                        <div class="page-header">
+                            <div>
+                                <h2>Resumen Financiero y Cobertura</h2>
+                                <p>Visualiza el estado de tus pólizas y solicita la cobertura de equipos nuevos (boleta ≤ <span class="dyn-dias-boleta">30</span> días).</p>
+                            </div>
+                            <button class="btn btn-sm" onclick="cambiarVistaCliente('siniestros')" style="background-color: var(--primary-color);"><i class="fas fa-shield-alt"></i> Reportar Robo</button>
+                        </div>
+                        <div class="kpi-grid">
+                            <div class="kpi-card"><div class="kpi-icon yellow"><i class="fas fa-clock"></i></div><div class="kpi-details"><h4>Solicitudes en Evaluación</h4><span id="kpi-pendientes">0</span></div></div>
+                            <div class="kpi-card"><div class="kpi-icon green"><i class="fas fa-check-circle"></i></div><div class="kpi-details"><h4>Pólizas Activas (Cubiertas)</h4><span id="kpi-aprobadas">0</span></div></div>
+                            <div class="kpi-card"><div class="kpi-icon blue"><i class="fas fa-calendar-alt"></i></div><div class="kpi-details"><h4>Próximo Vencimiento</h4><span id="kpi-vencimiento" style="font-size:1.15rem;">Sin pólizas</span></div></div>
+                        </div>
+                        <div class="dashboard-grid">
+                            <div class="card">
+                                <div class="card-header"><h3><i class="fas fa-plus-circle"></i> Solicitar Seguro de Equipo Nuevo</h3></div>
+                                <div class="card-body">
+                                    <form id="formEquipo">
+                                        <div class="form-grid">
+                                            <div class="form-group"><label>Clasificación del Equipo</label><select id="eq-tipo" onchange="actualizarMarcas()" required><option value="Celular">Celular / Smartphone</option><option value="Laptop">Computadora Portátil</option></select></div>
+                                            <div class="form-group"><label>Marca del Fabricante</label><select id="eq-marca" onchange="actualizarModelos()" required><option value="">Selecciona una marca...</option></select></div>
+                                            <div class="form-group"><label>Modelo Específico</label><select id="eq-modelo" required><option value="">Selecciona primero la marca...</option></select></div>
+                                            <div class="form-group"><label>IMEI (15 dígitos) o N° de Serie</label><input type="text" id="eq-serie" placeholder="Ej. 358901247610294" required style="padding-left:16px;"></div>
+                                            <div class="form-group"><label>Fecha de Compra (≤ <span class="dyn-dias-boleta">30</span> días)</label><input type="date" id="eq-fecha-compra" required style="padding-left:16px;"></div>
+                                            <div class="form-group"><label>Valor en Boleta (S/ mín. 200.00)</label><input type="number" id="eq-valor" step="0.01" min="200" max="25000" placeholder="Ej. 2500.00" oninput="simularCotizacion()" required style="padding-left:16px;"></div>
+                                            <div class="form-group full-width"><label>Comprobante / Boleta de Venta (PDF o Imagen)</label><input type="file" id="eq-boleta-file" accept=".pdf,.png,.jpg,.jpeg" onchange="actualizarNombreBoleta()" style="padding-left:16px;"><input type="hidden" id="eq-boleta-nombre" value="Boleta_Electronica_Verificada.pdf"></div>
+                                            <div class="form-group full-width" style="background:var(--bg-color); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                                                <div style="font-size:0.85rem; color:var(--text-muted);"><strong>Cuota Mensual (<span class="dyn-pct-prima">4</span>%):</strong> <span id="sim-cuota" style="color:var(--accent-color); font-weight:700;">S/ 0.00</span> / mes</div>
+                                                <div style="font-size:0.85rem; color:var(--text-muted);"><strong>Cobertura por Robo (<span class="dyn-pct-cob">80</span>%):</strong> <span id="sim-cobertura" style="color:var(--success); font-weight:700;">S/ 0.00</span></div>
+                                            </div>
+                                            <div class="form-group full-width"><button type="submit" class="btn"><i class="fas fa-paper-plane"></i> Enviar Solicitud con Boleta</button></div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header"><h3><i class="fas fa-mobile-alt"></i> Actividad Reciente</h3><button class="btn btn-sm" style="background:transparent; color:var(--accent-color); padding:0;" onclick="cambiarVistaCliente('dispositivos')">Ver todas →</button></div>
+                                <div class="card-body" id="resumen-dispositivos-lista"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="vista-dispositivos" class="subvista-cliente">
+                        <div class="page-header"><div><h2>Mis Solicitudes de Aseguramiento</h2><p>Historial de solicitudes enviadas, validación de boleta (≤ <span class="dyn-dias-boleta">30</span> días) e IMEI.</p></div><button class="btn btn-sm" onclick="cambiarVistaCliente('resumen')"><i class="fas fa-plus"></i> Nueva Solicitud</button></div>
+                        <div id="contenedor-tarjetas-dispositivos" class="devices-grid"></div>
+                    </div>
+
+                    <div id="vista-polizas" class="subvista-cliente">
+                        <div class="page-header"><div><h2>Mis Pólizas de Seguro</h2><p>Contratos emitidos (#POL-XXX), vigencia mensual y cobertura (<span class="dyn-pct-cob">80</span>%).</p></div></div>
+                        <div id="contenedor-polizas" class="devices-grid"></div>
+                    </div>
+
+                    <div id="vista-pagos" class="subvista-cliente">
+                        <div class="page-header"><div><h2>Gestión y Consulta de Pagos Mensuales</h2><p>Registra el pago de tu suscripción mensual (<span class="dyn-pct-prima">4</span>%) y consulta tu historial.</p></div></div>
+                        <div class="card" style="margin-bottom:24px;">
+                            <div class="card-header"><h3><i class="fas fa-calendar-check"></i> Cuotas Mensuales por Póliza</h3></div>
+                            <div style="overflow-x:auto;"><table><thead><tr><th>Póliza</th><th>Equipo Asegurado</th><th>Vigencia Actual</th><th>Cuota Mensual (<span class="dyn-pct-prima">4</span>%)</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="tabla-cuotas-polizas"></tbody></table></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3><i class="fas fa-receipt"></i> Historial de Pagos Realizados</h3></div>
+                            <div style="overflow-x:auto;"><table><thead><tr><th>Póliza</th><th>Cuota</th><th>Monto</th><th>Método / N° Operación</th><th>Fecha Registro</th><th>Periodo Cubierto</th><th>Estado</th></tr></thead><tbody id="tabla-pagos-cliente"></tbody></table></div>
+                        </div>
+                    </div>
+
+                    <div id="vista-siniestros" class="subvista-cliente">
+                        <div class="page-header"><div><h2>Registro y Seguimiento de Siniestros (Robo)</h2><p>Reporta el robo de tu equipo asegurado para gestionar el reembolso del <span class="dyn-pct-cob">80</span>% (máx. 2 semanas).</p></div></div>
+                        <div class="dashboard-grid">
+                            <div class="card">
+                                <div class="card-header"><h3><i class="fas fa-file-medical"></i> Reportar Robo de Equipo</h3></div>
+                                <div class="card-body">
+                                    <form id="formSiniestro">
+                                        <div class="form-grid">
+                                            <div class="form-group full-width"><label>Póliza Activa (Cubierta)</label><select id="sin-poliza" required></select></div>
+                                            <div class="form-group"><label>Fecha del Robo</label><input type="date" id="sin-fecha" required style="padding-left:16px;"></div>
+                                            <div class="form-group"><label>N° de Denuncia Policial</label><input type="text" id="sin-denuncia" placeholder="Ej. DEN-PNP-2026-4410" required style="padding-left:16px;"></div>
+                                            <div class="form-group"><label>Comisaría PNP</label><input type="text" id="sin-comisaria" placeholder="Ej. Comisaría Santa Anita" required style="padding-left:16px;"></div>
+                                            <div class="form-group"><label>Cuenta / Yape Reembolso (<span class="dyn-pct-cob">80</span>%)</label><input type="text" id="sin-cuenta" required style="padding-left:16px;"></div>
+                                            <div class="form-group full-width"><label>Acta de Denuncia Policial (PDF / Imagen)</label><input type="file" id="sin-archivo-file" accept=".pdf,.png,.jpg,.jpeg" onchange="actualizarNombreDenuncia()" style="padding-left:16px;"><input type="hidden" id="sin-archivo-nombre" value="Denuncia_Policial_Adjunta.pdf"></div>
+                                            <div class="form-group full-width"><label>Descripción de los Hechos</label><textarea id="sin-descripcion" rows="3" required></textarea></div>
+                                            <div class="form-group full-width"><button type="submit" class="btn btn-danger-solid"><i class="fas fa-exclamation-circle"></i> Registrar Reporte de Robo</button></div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="card"><div class="card-header"><h3><i class="fas fa-clock"></i> Estado de Reembolsos (Compromiso ≤ 14 días)</h3></div><div class="card-body" id="lista-siniestros-cliente"></div></div>
+                        </div>
+                    </div>
+
+                    <div id="vista-perfil" class="subvista-cliente">
+                        <div class="page-header"><div><h2>Mi Perfil de Estudiante Asegurado</h2><p>Actualiza tus datos universitarios y cuenta para reembolsos del <span class="dyn-pct-cob">80</span>%.</p></div></div>
+                        <div class="card" style="max-width:680px;">
+                            <div class="card-header"><h3><i class="fas fa-id-badge"></i> Datos Personales y Bancarios</h3></div>
+                            <div class="card-body">
+                                <form id="formPerfil">
+                                    <div class="form-grid">
+                                        <div class="form-group full-width"><label>Nombre Completo</label><input type="text" id="perf-nombre" required style="padding-left:16px;"></div>
+                                        <div class="form-group"><label>DNI</label><input type="text" id="perf-dni" disabled style="padding-left:16px; opacity:0.7;"></div>
+                                        <div class="form-group"><label>Correo</label><input type="text" id="perf-correo" disabled style="padding-left:16px; opacity:0.7;"></div>
+                                        <div class="form-group"><label>Código Universitario</label><input type="text" id="perf-codigo" required style="padding-left:16px;"></div>
+                                        <div class="form-group"><label>Teléfono</label><input type="text" id="perf-telefono" required style="padding-left:16px;"></div>
+                                        <div class="form-group full-width"><label>Cuenta Bancaria / Yape para Reembolsos (<span class="dyn-pct-cob">80</span>%)</label><input type="text" id="perf-cuenta" required style="padding-left:16px;"></div>
+                                        <div class="form-group full-width"><button type="submit" class="btn"><i class="fas fa-save"></i> Guardar Cambios de Perfil</button></div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- PANEL 3: ADMINISTRADOR -->
+    <div id="panel-admin" class="panel">
+        <div class="dashboard-wrapper">
+            <aside class="sidebar" style="background-color:#1e293b;">
+                <div class="sidebar-header"><i class="fas fa-user-shield"></i> Backoffice</div>
+                <div class="sidebar-nav">
+                    <div class="nav-item active" id="nav-admin-dashboard" onclick="cambiarVistaAdmin('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard y Solicitudes</div>
+                    <div class="nav-item" id="nav-admin-polizas" onclick="cambiarVistaAdmin('polizas')"><i class="fas fa-file-shield"></i> Pólizas y Vigencia</div>
+                    <div class="nav-item" id="nav-admin-pagos" onclick="cambiarVistaAdmin('pagos')"><i class="fas fa-money-check-alt"></i> Validación de Pagos</div>
+                    <div class="nav-item" id="nav-admin-siniestros" onclick="cambiarVistaAdmin('siniestros')"><i class="fas fa-ambulance"></i> Siniestros y Reembolsos</div>
+                    <div class="nav-item" id="nav-admin-estudiantes" onclick="cambiarVistaAdmin('estudiantes')"><i class="fas fa-users-cog"></i> Estudiantes y Catálogo</div>
+                </div>
+            </aside>
+            <main class="main-content">
+                <header class="topbar">
+                    <div style="font-weight:600; color:var(--text-muted);">Panel de Control Administrativo</div>
+                    <div class="user-menu">
+                        <div class="avatar" style="background-color:#10b981;">AD</div>
+                        <span id="admin-name-label" style="font-weight:600;">Administrador General</span>
+                        <button onclick="cerrarSesion()" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Salir</button>
+                    </div>
+                </header>
+                <div class="content-area">
+                    <div id="vista-admin-dashboard" class="subvista-admin active">
+                        <div class="page-header">
+                            <div><h2>Centro de Evaluación Técnica y KPIs</h2><p>Supervisa los indicadores globales, verifica boletas (≤ <span class="dyn-dias-boleta">30</span> días) y aprueba solicitudes.</p></div>
+                            <div style="display:flex; gap:10px;">
+                                <button onclick="exportarSolicitudesCSV()" class="btn btn-sm" style="background-color:var(--success);"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                                <button onclick="cargarTodoAdmin()" class="btn btn-sm" style="background-color:var(--primary-color);"><i class="fas fa-sync-alt"></i> Refrescar Bandeja</button>
+                            </div>
+                        </div>
+                        <div class="kpi-grid">
+                            <div class="kpi-card"><div class="kpi-icon blue"><i class="fas fa-user-graduate"></i></div><div class="kpi-details"><h4>Estudiantes Activos</h4><span id="admin-kpi-estudiantes">0</span></div></div>
+                            <div class="kpi-card"><div class="kpi-icon yellow"><i class="fas fa-inbox"></i></div><div class="kpi-details"><h4>Solicitudes por Evaluar</h4><span id="admin-kpi-solicitudes">0</span></div></div>
+                            <div class="kpi-card"><div class="kpi-icon green"><i class="fas fa-shield-alt"></i></div><div class="kpi-details"><h4>Pólizas Vigentes</h4><span id="admin-kpi-polizas">0</span></div></div>
+                            <div class="kpi-card"><div class="kpi-icon yellow" style="background:#fef2f2; color:var(--danger);"><i class="fas fa-exclamation-triangle"></i></div><div class="kpi-details"><h4>Siniestros Pendientes</h4><span id="admin-kpi-siniestros">0</span></div></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3><i class="fas fa-tasks"></i> Bandeja de Solicitudes de Aseguramiento</h3></div>
+                            <div style="overflow-x:auto;"><table><thead><tr><th>Ticket</th><th>Estudiante</th><th>Dispositivo / IMEI</th><th>Boleta / Antigüedad</th><th>Valor / Cuota (<span class="dyn-pct-prima">4</span>%)</th><th>Estado</th><th>Decisión Técnica</th></tr></thead><tbody id="tabla-solicitudes"></tbody></table></div>
+                        </div>
+                    </div>
+
+                    <div id="vista-admin-polizas" class="subvista-admin">
+                        <div class="page-header"><div><h2>Gestión de Pólizas y Control de Vigencia</h2><p>Listado maestro de pólizas emitidas (#POL-XXX), vigencia y suspensión por morosidad.</p></div><button onclick="cargarPolizasAdmin()" class="btn btn-sm" style="background-color:var(--primary-color);"><i class="fas fa-sync-alt"></i> Actualizar</button></div>
+                        <div class="card"><div class="card-header"><h3><i class="fas fa-file-contract"></i> Pólizas Emitidas</h3></div><div style="overflow-x:auto;"><table><thead><tr><th>Código Póliza</th><th>Asegurado</th><th>Equipo / Serie</th><th>Cobertura (<span class="dyn-pct-cob">80</span>%)</th><th>Cuota Mensual (<span class="dyn-pct-prima">4</span>%)</th><th>Vigencia (Inicio - Fin)</th><th>Estado</th><th>Control</th></tr></thead><tbody id="tabla-admin-polizas"></tbody></table></div></div>
+                    </div>
+
+                    <div id="vista-admin-pagos" class="subvista-admin">
+                        <div class="page-header"><div><h2>Gestión y Validación de Pagos Mensuales</h2><p>Confirma los abonos registrados para activar o renovar la cobertura mensual.</p></div><button onclick="cargarPagosAdmin()" class="btn btn-sm" style="background-color:var(--primary-color);"><i class="fas fa-sync-alt"></i> Actualizar</button></div>
+                        <div class="card"><div class="card-header"><h3><i class="fas fa-money-bill-wave"></i> Registro de Cuotas Recibidas</h3></div><div style="overflow-x:auto;"><table><thead><tr><th>Póliza</th><th>Estudiante</th><th>Cuota / Monto</th><th>Método / Operación</th><th>Fecha Registro</th><th>Periodo (30 días)</th><th>Estado</th><th>Validación</th></tr></thead><tbody id="tabla-admin-pagos"></tbody></table></div></div>
+                    </div>
+
+                    <div id="vista-admin-siniestros" class="subvista-admin">
+                        <div class="page-header"><div><h2>Bandeja de Siniestros y Reembolsos (<span class="dyn-pct-cob">80</span>%)</h2><p>Revisa denuncias policiales y registra el desembolso dentro del plazo máximo de 14 días.</p></div><button onclick="cargarSiniestrosAdmin()" class="btn btn-sm" style="background-color:var(--primary-color);"><i class="fas fa-sync-alt"></i> Actualizar</button></div>
+                        <div class="card"><div class="card-header"><h3><i class="fas fa-shield-virus"></i> Reportes de Robo Registrados</h3></div><div style="overflow-x:auto;"><table><thead><tr><th>Siniestro / Póliza</th><th>Estudiante / Equipo</th><th>Denuncia PNP / Comisaría</th><th>Reembolso (<span class="dyn-pct-cob">80</span>%) / Destino</th><th>Plazo (Máx. 14d)</th><th>Estado</th><th>Resolución</th></tr></thead><tbody id="tabla-admin-siniestros"></tbody></table></div></div>
+                    </div>
+
+                    <div id="vista-admin-estudiantes" class="subvista-admin">
+                        <div class="page-header"><div><h2>Gestión de Estudiantes, Catálogo y Parámetros</h2><p>Audita estudiantes asegurados y administra el catálogo y reglas paramétricas del negocio.</p></div></div>
+                        <div class="card" style="margin-bottom:24px;"><div class="card-header"><h3><i class="fas fa-user-graduate"></i> Estudiantes Registrados</h3></div><div style="overflow-x:auto;"><table><thead><tr><th>Estudiante</th><th>DNI / Código Univ.</th><th>Correo / Teléfono</th><th>Cuenta Reembolso</th><th>Pólizas Activas</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="tabla-admin-estudiantes"></tbody></table></div></div>
+                        <div class="dashboard-grid">
+                            <div class="card">
+                                <div class="card-header"><h3><i class="fas fa-laptop-medical"></i> Catálogo de Marcas y Modelos</h3></div>
+                                <div class="card-body">
+                                    <form id="formNuevoModelo" style="margin-bottom:20px;">
+                                        <div class="form-grid">
+                                            <div class="form-group"><label>Tipo</label><select id="cat-tipo" required><option value="Celular">Celular</option><option value="Laptop">Laptop</option></select></div>
+                                            <div class="form-group"><label>Marca</label><input type="text" id="cat-marca" placeholder="Ej. Samsung" required style="padding-left:16px;"></div>
+                                            <div class="form-group full-width"><label>Modelo</label><input type="text" id="cat-modelo" placeholder="Ej. Galaxy S24" required style="padding-left:16px;"></div>
+                                            <div class="form-group full-width"><button type="submit" class="btn btn-sm" style="width:100%;"><i class="fas fa-plus"></i> Agregar Modelo al Catálogo</button></div>
+                                        </div>
+                                    </form>
+                                    <div id="lista-catalogo-admin" style="max-height:240px; overflow-y:auto; border-top:1px solid var(--border); padding-top:12px;"></div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header"><h3><i class="fas fa-sliders-h"></i> Parámetros Globales del Negocio</h3></div>
+                                <div class="card-body">
+                                    <form id="formParametros">
+                                        <div class="form-grid">
+                                            <div class="form-group full-width"><label>Cobertura de Reembolso ante Robo (%)</label><input type="number" id="param-cobertura" min="50" max="100" required style="padding-left:16px;"></div>
+                                            <div class="form-group full-width"><label>Prima / Cuota Mensual sobre Valor de Boleta (%)</label><input type="number" id="param-prima" step="0.5" min="1" max="25" required style="padding-left:16px;"></div>
+                                            <div class="form-group full-width"><label>Antigüedad Máxima de Boleta de Compra (Días)</label><input type="number" id="param-dias" min="1" max="90" required style="padding-left:16px;"></div>
+                                            <div class="form-group full-width"><button type="submit" class="btn"><i class="fas fa-save"></i> Actualizar Reglas de Negocio</button></div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = `http://${window.location.hostname}:8080/api`;
+        let catalogoGlobal = [];
+        let parametrosGlobales = { PORCENTAJE_COBERTURA: 80, PORCENTAJE_PRIMA: 4, DIAS_MAX_BOLETA: 30, PLAZO_MAX_REEMBOLSO: 14 };
+        let cacheDatosCliente = { equipos: [], polizas: [], pagos: [], siniestros: [] };
+        let cacheSolicitudesAdmin = [];
+
+        function mostrarAlerta(mensaje, esExito) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${esExito ? 'success' : 'error'}`;
+            toast.innerHTML = `<i class="fas ${esExito ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> <span>${mensaje}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+        }
+
+        function actualizarEtiquetasParametros(params) {
+            if (!params) return;
+            parametrosGlobales = params;
+            document.querySelectorAll('.dyn-pct-cob').forEach(el => el.innerText = params.PORCENTAJE_COBERTURA);
+            document.querySelectorAll('.dyn-pct-prima').forEach(el => el.innerText = params.PORCENTAJE_PRIMA);
+            document.querySelectorAll('.dyn-dias-boleta').forEach(el => el.innerText = params.DIAS_MAX_BOLETA);
+            const hoy = new Date().toISOString().split('T')[0];
+            const minF = new Date(Date.now() - (parseInt(params.DIAS_MAX_BOLETA) || 30) * 86400000).toISOString().split('T')[0];
+            const inp = document.getElementById('eq-fecha-compra');
+            if (inp) { inp.max = hoy; inp.min = minF; }
+            simularCotizacion();
+        }
+
+        function abrirModal(titulo, html) {
+            document.getElementById('modal-titulo').innerHTML = `<i class="fas fa-shield-alt"></i> ${titulo}`;
+            document.getElementById('modal-cuerpo').innerHTML = html;
+            document.getElementById('modal-detalle').classList.add('active');
+        }
+        function cerrarModal() { document.getElementById('modal-detalle').classList.remove('active'); }
+        function badgeClass(est) { return (est || 'Pendiente').replace(/\s+/g, '-'); }
+        function toggleAuth(v) {
+            document.getElementById('caja-login').style.display = v === 'login' ? 'block' : 'none';
+            document.getElementById('caja-registro').style.display = v === 'registro' ? 'block' : 'none';
+        }
+        function mostrarPanel(id) {
+            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function inicializarCatalogoYFechas() {
+            const hoy = new Date().toISOString().split('T')[0];
+            const f1 = document.getElementById('eq-fecha-compra');
+            if (f1 && !f1.value) f1.value = hoy;
+            const f2 = document.getElementById('sin-fecha');
+            if (f2 && !f2.value) { f2.max = hoy; f2.value = hoy; }
+            fetch(`${API_URL}/catalogo`).then(r => r.json()).then(data => {
+                if (data.catalogo) catalogoGlobal = data.catalogo;
+                if (data.parametros) actualizarEtiquetasParametros(data.parametros);
+                actualizarMarcas();
+            }).catch(() => {});
+        }
+
+        function actualizarMarcas() {
+            const tipo = document.getElementById('eq-tipo').value;
+            const sel = document.getElementById('eq-marca');
+            const marcas = [...new Set(catalogoGlobal.filter(c => c.tipo_dispositivo === tipo).map(c => c.marca))];
+            sel.innerHTML = '<option value="">Selecciona una marca...</option>';
+            marcas.forEach(m => sel.innerHTML += `<option value="${m}">${m}</option>`);
+            actualizarModelos();
+        }
+
+        function actualizarModelos() {
+            const tipo = document.getElementById('eq-tipo').value;
+            const marca = document.getElementById('eq-marca').value;
+            const sel = document.getElementById('eq-modelo');
+            sel.innerHTML = '<option value="">Selecciona un modelo...</option>';
+            catalogoGlobal.filter(c => c.tipo_dispositivo === tipo && c.marca === marca).forEach(m => sel.innerHTML += `<option value="${m.modelo}">${m.modelo}</option>`);
+        }
+
+        function simularCotizacion() {
+            const v = parseFloat(document.getElementById('eq-valor').value) || 0;
+            const p = (parseFloat(parametrosGlobales.PORCENTAJE_PRIMA) || 4) / 100;
+            const c = (parseFloat(parametrosGlobales.PORCENTAJE_COBERTURA) || 80) / 100;
+            document.getElementById('sim-cuota').innerText = `S/ ${(v * p).toFixed(2)}`;
+            document.getElementById('sim-cobertura').innerText = `S/ ${(v * c).toFixed(2)}`;
+        }
+
+        function actualizarNombreBoleta() {
+            const f = document.getElementById('eq-boleta-file');
+            if (f.files && f.files[0]) document.getElementById('eq-boleta-nombre').value = f.files[0].name;
+        }
+        function actualizarNombreDenuncia() {
+            const f = document.getElementById('sin-archivo-file');
+            if (f.files && f.files[0]) document.getElementById('sin-archivo-nombre').value = f.files[0].name;
+        }
+
+        function cambiarVistaCliente(v) {
+            document.querySelectorAll('.subvista-cliente').forEach(el => el.classList.remove('active'));
+            document.getElementById(`vista-${v}`).classList.add('active');
+            document.querySelectorAll('#panel-cliente .nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(`nav-${v}`).classList.add('active');
+            cargarDatosCliente();
+        }
+
+        function cambiarVistaAdmin(v) {
+            document.querySelectorAll('.subvista-admin').forEach(el => el.classList.remove('active'));
+            document.getElementById(`vista-admin-${v}`).classList.add('active');
+            document.querySelectorAll('#panel-admin .nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(`nav-admin-${v}`).classList.add('active');
+            cargarResumenKPIsAdmin();
+            if (v === 'dashboard') cargarSolicitudes();
+            if (v === 'polizas') cargarPolizasAdmin();
+            if (v === 'pagos') cargarPagosAdmin();
+            if (v === 'siniestros') cargarSiniestrosAdmin();
+            if (v === 'estudiantes') cargarEstudiantesYCatalogoAdmin();
+        }
+
+        function cerrarSesion() {
+            localStorage.clear();
+            mostrarPanel('panel-auth');
+            mostrarAlerta('Sesión cerrada correctamente.', true);
+        }
+
+        function cargarDatosCliente() {
+            const idUsu = localStorage.getItem('id_usuario');
+            if (!idUsu) return;
+            fetch(`${API_URL}/cliente/${idUsu}/datos`).then(r => r.json()).then(data => {
+                cacheDatosCliente = data;
+                if (data.parametros) actualizarEtiquetasParametros(data.parametros);
+                const pctCob = parametrosGlobales.PORCENTAJE_COBERTURA;
+                const pctPrima = parametrosGlobales.PORCENTAJE_PRIMA;
+                const equipos = data.equipos || [], polizas = data.polizas || [], pagos = data.pagos || [], siniestros = data.siniestros || [], perfil = data.perfil || {};
+
+                if (perfil.nombre_completo) {
+                    document.getElementById('perf-nombre').value = perfil.nombre_completo || '';
+                    document.getElementById('perf-dni').value = perfil.dni || '';
+                    document.getElementById('perf-correo').value = perfil.correo_universitario || '';
+                    document.getElementById('perf-codigo').value = perfil.codigo_universitario || '';
+                    document.getElementById('perf-telefono').value = perfil.telefono || '';
+                    document.getElementById('perf-cuenta').value = perfil.cuenta_reembolso || '';
+                    if (!document.getElementById('sin-cuenta').value) document.getElementById('sin-cuenta').value = perfil.cuenta_reembolso || '';
+                }
+
+                const activas = polizas.filter(p => p.estado === 'Activa');
+                document.getElementById('kpi-pendientes').innerText = equipos.filter(e => e.estado === 'Pendiente').length;
+                document.getElementById('kpi-aprobadas').innerText = activas.length;
+                document.getElementById('kpi-vencimiento').innerText = activas.length > 0 ? activas[0].fecha_fin : (polizas.length > 0 ? 'Pago pendiente' : 'Sin pólizas');
+
+                const divRes = document.getElementById('resumen-dispositivos-lista');
+                divRes.innerHTML = equipos.length === 0 ? `<div class="empty-state"><i class="fas fa-box-open"></i><h4>Sin solicitudes</h4></div>` :
+                    equipos.slice(0, 4).map(eq => `<div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border);"><div><div style="font-weight:600; color:var(--primary-color);">${eq.codigo_ticket} • ${eq.marca} ${eq.modelo}</div><div style="font-size:0.8rem; color:var(--text-muted);">IMEI/Serie: ${eq.nro_serie} • S/ ${eq.valor_declarado.toFixed(2)}</div></div><span class="badge ${badgeClass(eq.estado)}">${eq.estado}</span></div>`).join('');
+
+                const divDisp = document.getElementById('contenedor-tarjetas-dispositivos');
+                divDisp.innerHTML = equipos.length === 0 ? `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><i class="fas fa-laptop"></i><h4>Sin solicitudes</h4></div></div>` :
+                    equipos.map(eq => `<div class="device-item-card"><div class="device-top"><div class="device-title"><i class="fas ${eq.tipo_dispositivo==='Laptop'?'fa-laptop':'fa-mobile-alt'}"></i><div><h4>${eq.marca} ${eq.modelo}</h4><span style="font-size:0.8rem; color:var(--text-muted);">${eq.tipo_dispositivo} • <strong>${eq.codigo_ticket}</strong></span></div></div><span class="badge ${badgeClass(eq.estado)}">${eq.estado}</span></div><div class="device-meta"><div><strong>IMEI/Serie:</strong> ${eq.nro_serie}</div><div><strong>Compra:</strong> ${eq.fecha_compra} (${eq.ruta_foto_evidencia})</div><div><strong>Valor Boleta:</strong> S/ ${eq.valor_declarado.toFixed(2)}</div><div><strong>Cobertura (${pctCob}%) / Cuota (${pctPrima}%):</strong> S/ ${eq.cobertura_max.toFixed(2)} • S/ ${eq.prima_mensual.toFixed(2)}/mes</div><div><strong>Obs:</strong> ${eq.observaciones}</div></div></div>`).join('');
+
+                const divPol = document.getElementById('contenedor-polizas');
+                divPol.innerHTML = polizas.length === 0 ? `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><i class="fas fa-file-shield"></i><h4>Sin pólizas</h4></div></div>` :
+                    polizas.map(pol => `<div class="device-item-card" style="border-left:4px solid ${pol.estado==='Activa'?'var(--success)':'var(--warning)'};"><div class="device-top"><div><span style="font-size:0.75rem; font-weight:700; color:var(--accent-color);">Póliza ${pol.codigo_poliza}</span><h4>${pol.marca} ${pol.modelo}</h4></div><span class="badge ${badgeClass(pol.estado)}">${pol.estado==='Activa'?'Cubierto':pol.estado}</span></div><div class="device-meta"><div><strong>IMEI/Serie:</strong> ${pol.nro_serie}</div><div><strong>Cobertura (${pctCob}%):</strong> S/ ${pol.valor_asegurado.toFixed(2)}</div><div><strong>Cuota (${pctPrima}%):</strong> S/ ${pol.prima_mensual.toFixed(2)}/mes</div><div><strong>Vigencia:</strong> ${pol.fecha_inicio} al ${pol.fecha_fin}</div></div><div style="display:flex; gap:8px;"><button class="btn btn-sm" style="flex:1; background:var(--primary-color);" onclick="verCertificadoPoliza(${pol.id_poliza})"><i class="fas fa-certificate"></i> Certificado</button>${pol.estado!=='Activa'&&pol.estado!=='Cancelada'?`<button class="btn btn-success btn-sm" style="flex:1;" onclick="cambiarVistaCliente('pagos')">Pagar Cuota</button>`:''}${pol.estado==='Activa'&&!pol.tiene_siniestro_activo?`<button class="btn btn-danger-solid btn-sm" style="flex:1;" onclick="irAReportarRobo(${pol.id_poliza})">Reportar Robo</button>`:''}</div></div>`).join('');
+
+                document.getElementById('tabla-cuotas-polizas').innerHTML = polizas.length === 0 ? `<tr><td colspan="6" style="text-align:center; padding:25px;">Sin pólizas emitidas.</td></tr>` :
+                    polizas.map(pol => `<tr><td style="font-weight:700; color:var(--accent-color);">${pol.codigo_poliza}</td><td>${pol.marca} ${pol.modelo}</td><td>${pol.fecha_inicio} → ${pol.fecha_fin}</td><td style="font-weight:700;">S/ ${pol.prima_mensual.toFixed(2)}</td><td><span class="badge ${badgeClass(pol.estado)}">${pol.estado==='Activa'?'Cubierto':pol.estado}</span></td><td>${pol.pagos_en_verificacion>0?`<span class="badge Pendiente">En verificación</span>`:(pol.estado==='Cancelada'?'Finalizada':`<button class="btn btn-success btn-sm" onclick="realizarPago(${pol.id_poliza},'${pol.codigo_poliza}',${pol.prima_mensual})">Registrar Pago</button>`)}</td></tr>`).join('');
+
+                document.getElementById('tabla-pagos-cliente').innerHTML = pagos.length === 0 ? `<tr><td colspan="7" style="text-align:center; padding:25px;">Sin pagos registrados.</td></tr>` :
+                    pagos.map(pg => `<tr><td style="font-weight:600;">${pg.codigo_poliza}</td><td>Cuota #${pg.numero_cuota}</td><td style="font-weight:700;">S/ ${pg.monto.toFixed(2)}</td><td>${pg.metodo_pago} (${pg.codigo_transaccion})</td><td>${pg.fecha_pago}</td><td>${pg.periodo_inicio} al ${pg.periodo_fin}</td><td><span class="badge ${badgeClass(pg.estado_pago)}">${pg.estado_pago==='Aprobado'?'Validado':(pg.estado_pago==='Pendiente'?'En verificación':pg.estado_pago)}</span></td></tr>`).join('');
+
+                const cubiertas = polizas.filter(p => p.estado === 'Activa' && !p.tiene_siniestro_activo);
+                document.getElementById('sin-poliza').innerHTML = cubiertas.length === 0 ? `<option value="">Sin pólizas cubiertas disponibles</option>` :
+                    cubiertas.map(p => `<option value="${p.id_poliza}">${p.codigo_poliza} - ${p.marca} ${p.modelo} (Reembolso ${pctCob}%: S/ ${p.valor_asegurado.toFixed(2)})</option>`).join('');
+
+                document.getElementById('lista-siniestros-cliente').innerHTML = siniestros.length === 0 ? `<div class="empty-state"><i class="fas fa-shield-alt"></i><h4>Sin reportes de robo</h4></div>` :
+                    siniestros.map(sn => `<div class="device-item-card" style="margin-bottom:12px;"><div class="device-top"><div><span style="font-size:0.75rem; font-weight:700; color:var(--accent-color);">${sn.codigo_siniestro} • ${sn.codigo_poliza}</span><h4>${sn.marca} ${sn.modelo}</h4></div><span class="badge ${badgeClass(sn.estado)}">${sn.estado}</span></div><div class="device-meta"><div><strong>Denuncia:</strong> ${sn.nro_denuncia_policial} (${sn.comisaria})</div><div><strong>Reembolso (${pctCob}%):</strong> <span style="color:var(--success); font-weight:700;">S/ ${sn.monto_reembolso.toFixed(2)}</span> (${sn.cuenta_destino})</div><div><strong>Plazo:</strong> Día ${sn.dias_transcurridos} de ${sn.plazo_max_dias}</div><div><strong>Detalle:</strong> ${sn.observaciones_admin}</div></div></div>`).join('');
+            }).catch(() => {});
+        }
+
+        function verCertificadoPoliza(idPol) {
+            const pol = (cacheDatosCliente.polizas || []).find(p => p.id_poliza === idPol);
+            if (!pol) return;
+            abrirModal(`Certificado Digital ${pol.codigo_poliza}`, `<div style="display:flex; flex-direction:column; gap:10px; font-size:0.92rem;"><div><strong>Asegurado:</strong> ${document.getElementById('user-name-label').innerText}</div><div><strong>Equipo:</strong> ${pol.marca} ${pol.modelo} (${pol.nro_serie})</div><div><strong>Cobertura (${parametrosGlobales.PORCENTAJE_COBERTURA}%):</strong> S/ ${pol.valor_asegurado.toFixed(2)}</div><div><strong>Cuota Mensual (${parametrosGlobales.PORCENTAJE_PRIMA}%):</strong> S/ ${pol.prima_mensual.toFixed(2)}</div><div><strong>Vigencia:</strong> ${pol.fecha_inicio} al ${pol.fecha_fin}</div><button class="btn btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button></div>`);
+        }
+
+        function irAReportarRobo(idPol) {
+            cambiarVistaCliente('siniestros');
+            setTimeout(() => { document.getElementById('sin-poliza').value = idPol; }, 150);
+        }
+
+        function realizarPago(idPol, codPol, monto) {
+            const op = prompt(`Registrar pago mensual de S/ ${monto.toFixed(2)} para ${codPol}.\nIngresa N° Operación Yape / Transferencia:`, `YAPE-${Math.floor(100000+Math.random()*900000)}`);
+            if (op === null) return;
+            fetch(`${API_URL}/cliente/pagar`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id_poliza: idPol, metodo: 'Yape / Transferencia', codigo_transaccion: op.trim()}) })
+            .then(r => r.json()).then(d => { d.mensaje ? (mostrarAlerta(d.mensaje, true), cargarDatosCliente()) : mostrarAlerta(d.error, false); });
+        }
+
+        document.getElementById('formRegistro').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const correo = document.getElementById('reg-correo').value.trim();
+            if (!/^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9-]+\.)*(edu\.pe|edu|instapac\.local)$/i.test(correo)) {
+                mostrarAlerta('Debes ingresar un correo institucional (.edu.pe o .edu).', false);
+                return;
+            }
+            const datos = {
+                nombre_completo: document.getElementById('reg-nombre').value,
+                dni: document.getElementById('reg-dni').value,
+                telefono: document.getElementById('reg-telefono').value,
+                codigo_universitario: document.getElementById('reg-codigo').value,
+                cuenta_reembolso: document.getElementById('reg-cuenta').value,
+                correo: correo,
+                password: document.getElementById('reg-password').value
+            };
+            fetch(`${API_URL}/registro`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(datos) })
+            .then(r => r.json()).then(d => {
+                if (d.id_usuario) { mostrarAlerta('Cuenta estudiantil creada. Inicia sesión.', true); toggleAuth('login'); document.getElementById('formRegistro').reset(); }
+                else mostrarAlerta(d.error || 'Error al registrar', false);
+            }).catch(() => mostrarAlerta('Error de conexión con el servidor.', false));
+        });
+
+        document.getElementById('formLogin').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-login');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+            const datos = { correo: document.getElementById('log-correo').value.trim(), password: document.getElementById('log-password').value };
+            fetch(`${API_URL}/login`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(datos) })
+            .then(r => r.json()).then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Acceder a mi cuenta';
+                if (data.id_usuario) {
+                    localStorage.setItem('id_usuario', data.id_usuario);
+                    localStorage.setItem('rol', data.rol);
+                    localStorage.setItem('nombre', data.nombre || 'Usuario');
+                    document.getElementById('user-name-label').innerText = data.nombre || 'Estudiante';
+                    document.getElementById('admin-name-label').innerText = data.nombre || 'Administrador';
+                    document.getElementById('formLogin').reset();
+                    if (data.rol === 'admin') { mostrarPanel('panel-admin'); cambiarVistaAdmin('dashboard'); mostrarAlerta('Bienvenido al Backoffice', true); }
+                    else { mostrarPanel('panel-cliente'); inicializarCatalogoYFechas(); cambiarVistaCliente('resumen'); mostrarAlerta(`Bienvenido, ${data.nombre}`, true); }
+                } else {
+                    mostrarAlerta(data.error || 'Credenciales incorrectas', false);
+                }
+            }).catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Acceder a mi cuenta';
+                mostrarAlerta('El contenedor backend está reiniciando. Intenta en 3 segundos.', false);
+            });
+        });
+
+        document.getElementById('formEquipo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const datos = {
+                id_usuario: localStorage.getItem('id_usuario'),
+                tipo_equipo: document.getElementById('eq-tipo').value,
+                marca: document.getElementById('eq-marca').value,
+                modelo: document.getElementById('eq-modelo').value,
+                nro_serie: document.getElementById('eq-serie').value,
+                fecha_compra: document.getElementById('eq-fecha-compra').value,
+                valor_declarado: parseFloat(document.getElementById('eq-valor').value),
+                archivo_boleta: document.getElementById('eq-boleta-nombre').value
+            };
+            fetch(`${API_URL}/equipos`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(datos) })
+            .then(r => r.json()).then(d => {
+                if (d.mensaje) { mostrarAlerta(d.mensaje, true); document.getElementById('formEquipo').reset(); inicializarCatalogoYFechas(); simularCotizacion(); cargarDatosCliente(); }
+                else mostrarAlerta(d.error, false);
+            });
+        });
+
+        document.getElementById('formSiniestro').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const idPol = document.getElementById('sin-poliza').value;
+            if (!idPol) return mostrarAlerta('Selecciona una póliza cubierta.', false);
+            const datos = {
+                id_poliza: idPol,
+                fecha_incidente: document.getElementById('sin-fecha').value,
+                nro_denuncia_policial: document.getElementById('sin-denuncia').value,
+                comisaria: document.getElementById('sin-comisaria').value,
+                cuenta_destino: document.getElementById('sin-cuenta').value,
+                archivo_denuncia: document.getElementById('sin-archivo-nombre').value,
+                descripcion: document.getElementById('sin-descripcion').value
+            };
+            fetch(`${API_URL}/cliente/siniestros`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(datos) })
+            .then(r => r.json()).then(d => { d.mensaje ? (mostrarAlerta(d.mensaje, true), document.getElementById('formSiniestro').reset(), cargarDatosCliente()) : mostrarAlerta(d.error, false); });
+        });
+
+        document.getElementById('formPerfil').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const idUsu = localStorage.getItem('id_usuario');
+            const datos = {
+                nombre_completo: document.getElementById('perf-nombre').value,
+                codigo_universitario: document.getElementById('perf-codigo').value,
+                telefono: document.getElementById('perf-telefono').value,
+                cuenta_reembolso: document.getElementById('perf-cuenta').value
+            };
+            fetch(`${API_URL}/cliente/${idUsu}/perfil`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(datos) })
+            .then(r => r.json()).then(d => { d.mensaje ? (document.getElementById('user-name-label').innerText = d.nombre, mostrarAlerta(d.mensaje, true), cargarDatosCliente()) : mostrarAlerta(d.error, false); });
+        });
+
+        function cargarTodoAdmin() { cargarResumenKPIsAdmin(); cargarSolicitudes(); }
+
+        function cargarResumenKPIsAdmin() {
+            fetch(`${API_URL}/admin/resumen`).then(r => r.json()).then(d => {
+                if (d.kpis) {
+                    document.getElementById('admin-kpi-estudiantes').innerText = d.kpis.estudiantes_activos;
+                    document.getElementById('admin-kpi-solicitudes').innerText = d.kpis.solicitudes_pendientes;
+                    document.getElementById('admin-kpi-polizas').innerText = d.kpis.polizas_activas;
+                    document.getElementById('admin-kpi-siniestros').innerText = d.kpis.siniestros_pendientes;
+                }
+                if (d.parametros) {
+                    actualizarEtiquetasParametros(d.parametros);
+                    document.getElementById('param-cobertura').value = d.parametros.PORCENTAJE_COBERTURA;
+                    document.getElementById('param-prima').value = d.parametros.PORCENTAJE_PRIMA;
+                    document.getElementById('param-dias').value = d.parametros.DIAS_MAX_BOLETA;
+                }
+            }).catch(() => {});
+        }
+
+        function cargarSolicitudes() {
+            const tbody = document.getElementById('tabla-solicitudes');
+            fetch(`${API_URL}/admin/solicitudes`).then(r => r.json()).then(data => {
+                cacheSolicitudesAdmin = data || [];
+                tbody.innerHTML = data.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding:30px;">Sin solicitudes.</td></tr>' :
+                    data.map(req => `<tr><td style="font-weight:700;">${req.codigo_ticket}</td><td><div style="font-weight:600;">${req.nombre_completo}</div><div style="font-size:0.78rem; color:var(--text-muted);">DNI: ${req.dni} • Cód: ${req.codigo_universitario}</div></td><td><div>${req.tipo_equipo}: <strong>${req.marca} ${req.modelo}</strong></div><div style="font-size:0.78rem; color:var(--text-muted);">IMEI/Serie: ${req.nro_serie}</div></td><td><div style="color:var(--accent-color); font-weight:600;"><i class="fas fa-file-invoice"></i> ${req.ruta_foto_evidencia}</div><div style="font-size:0.78rem; color:var(--text-muted);">Compra: ${req.fecha_compra} (${req.dias_boleta} días)</div></td><td><div style="font-weight:700;">S/ ${req.valor_declarado.toFixed(2)}</div><div style="font-size:0.78rem; color:var(--text-muted);">Cuota: S/ ${req.prima_mensual.toFixed(2)}/mes</div></td><td><span class="badge ${badgeClass(req.estado)}">${req.estado}</span>${req.numero_poliza?`<div style="font-size:0.75rem; color:var(--success); font-weight:600; margin-top:4px;">#${req.numero_poliza}</div>`:''}</td><td>${req.estado==='Pendiente'?`<div style="display:flex; gap:8px;"><button class="btn btn-success btn-sm" onclick="evaluarSolicitud(${req.id_solicitud},'Aprobada')"><i class="fas fa-check"></i> Aprobar</button><button class="btn btn-danger-solid btn-sm" onclick="evaluarSolicitud(${req.id_solicitud},'Rechazada')"><i class="fas fa-times"></i> Rechazar</button></div>`:`<span style="font-size:0.82rem; color:var(--text-muted);">${req.observaciones}</span>`}</td></tr>`).join('');
+            });
+        }
+
+        function evaluarSolicitud(idSol, dec) {
+            let obs = 'Boleta e IMEI verificados.';
+            if (dec === 'Rechazada') { obs = prompt('Motivo del rechazo:', 'Boleta fuera de plazo o datos no coinciden.'); if (obs === null) return; }
+            fetch(`${API_URL}/admin/evaluar`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id_solicitud: idSol, estado: dec, observaciones: obs}) })
+            .then(r => r.json()).then(d => { mostrarAlerta(d.mensaje, true); cargarTodoAdmin(); });
+        }
+
+        function cargarPolizasAdmin() {
+            const tbody = document.getElementById('tabla-admin-polizas');
+            fetch(`${API_URL}/admin/polizas`).then(r => r.json()).then(data => {
+                tbody.innerHTML = data.map(pol => `<tr><td style="font-weight:700; color:var(--accent-color);">${pol.codigo_poliza}</td><td>${pol.nombre_completo}<div style="font-size:0.78rem; color:var(--text-muted);">DNI: ${pol.dni}</div></td><td>${pol.marca} ${pol.modelo}<div style="font-size:0.78rem; color:var(--text-muted);">${pol.nro_serie}</div></td><td style="font-weight:700;">S/ ${pol.valor_asegurado.toFixed(2)}</td><td style="font-weight:700; color:var(--primary-color);">S/ ${pol.prima_mensual.toFixed(2)}</td><td>${pol.fecha_inicio} al ${pol.fecha_fin}</td><td><span class="badge ${badgeClass(pol.estado)}">${pol.estado==='Activa'?'Cubierto':pol.estado}</span></td><td>${pol.estado==='Activa'?`<button class="btn btn-danger-solid btn-sm" onclick="cambiarEstadoPoliza(${pol.id_poliza},'Suspendida')"><i class="fas fa-pause"></i> Suspender</button>`:(pol.estado!=='Cancelada'?`<button class="btn btn-success btn-sm" onclick="cambiarEstadoPoliza(${pol.id_poliza},'Activa')"><i class="fas fa-play"></i> Activar</button>`:'Finalizada')}</td></tr>`).join('');
+            });
+        }
+
+        function cambiarEstadoPoliza(idPol, est) {
+            fetch(`${API_URL}/admin/polizas`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id_poliza: idPol, estado: est}) })
+            .then(r => r.json()).then(d => { mostrarAlerta(d.mensaje, true); cargarPolizasAdmin(); cargarResumenKPIsAdmin(); });
+        }
+
+        function cargarPagosAdmin() {
+            const tbody = document.getElementById('tabla-admin-pagos');
+            fetch(`${API_URL}/admin/pagos`).then(r => r.json()).then(data => {
+                tbody.innerHTML = data.map(pg => `<tr><td style="font-weight:700;">${pg.codigo_poliza}</td><td>${pg.nombre_completo}<div style="font-size:0.78rem; color:var(--text-muted);">${pg.marca} ${pg.modelo}</div></td><td style="font-weight:700;">Cuota #${pg.numero_cuota} • S/ ${pg.monto.toFixed(2)}</td><td>${pg.metodo_pago}<div style="font-size:0.78rem; color:var(--accent-color); font-weight:600;">${pg.codigo_transaccion}</div></td><td>${pg.fecha_intento}</td><td>${pg.periodo_inicio} al ${pg.periodo_fin}</td><td><span class="badge ${badgeClass(pg.estado_pago)}">${pg.estado_pago==='Pendiente'?'En verificación':pg.estado_pago}</span></td><td>${pg.estado_pago==='Pendiente'?`<div style="display:flex; gap:8px;"><button class="btn btn-success btn-sm" onclick="validarPagoAdmin(${pg.id_pago},'Aprobado')"><i class="fas fa-check"></i> Validar Pago</button><button class="btn btn-danger-solid btn-sm" onclick="validarPagoAdmin(${pg.id_pago},'Rechazado')"><i class="fas fa-times"></i></button></div>`:`Confirmado (${pg.fecha_confirmacion||'-'})`}</td></tr>`).join('');
+            });
+        }
+
+        function validarPagoAdmin(idPago, dec) {
+            fetch(`${API_URL}/admin/pagos`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id_pago: idPago, estado_pago: dec}) })
+            .then(r => r.json()).then(d => { mostrarAlerta(d.mensaje, true); cargarPagosAdmin(); cargarResumenKPIsAdmin(); });
+        }
+
+        function cargarSiniestrosAdmin() {
+            const tbody = document.getElementById('tabla-admin-siniestros');
+            const pctCob = parametrosGlobales.PORCENTAJE_COBERTURA || 80;
+            fetch(`${API_URL}/admin/siniestros`).then(r => r.json()).then(data => {
+                tbody.innerHTML = data.map(sn => `<tr><td><div style="font-weight:700;">${sn.codigo_siniestro}</div><div style="font-size:0.8rem; color:var(--accent-color); font-weight:600;">Póliza ${sn.codigo_poliza}</div></td><td><div style="font-weight:600;">${sn.nombre_completo}</div><div style="font-size:0.78rem; color:var(--text-muted);">${sn.marca} ${sn.modelo} (${sn.nro_serie})</div></td><td><div style="font-weight:600;">${sn.nro_denuncia_policial}</div><div style="font-size:0.78rem; color:var(--text-muted);">${sn.comisaria} • ${sn.archivo_denuncia}</div></td><td><div style="font-weight:700; color:var(--success);">S/ ${sn.monto_reembolso.toFixed(2)}</div><div style="font-size:0.78rem; color:var(--text-muted);">${sn.cuenta_destino}</div></td><td><span style="font-weight:600;">${sn.dias_transcurridos} / ${sn.plazo_max_dias} días</span></td><td><span class="badge ${badgeClass(sn.estado)}">${sn.estado}</span></td><td>${sn.estado==='En revision'||sn.estado==='Aprobado'?`<div style="display:flex; gap:8px;"><button class="btn btn-success btn-sm" onclick="procesarSiniestroAdmin(${sn.id_siniestro},'Reembolsado',${sn.monto_reembolso})"><i class="fas fa-check"></i> Aprobar y Reembolsar (${pctCob}%)</button><button class="btn btn-danger-solid btn-sm" onclick="procesarSiniestroAdmin(${sn.id_siniestro},'Rechazado',${sn.monto_reembolso})"><i class="fas fa-times"></i> Rechazar</button></div>`:`Cerrado (${sn.codigo_desembolso||'-'})`}</td></tr>`).join('');
+            });
+        }
+
+        function procesarSiniestroAdmin(idSin, est, monto) {
+            const pct = parametrosGlobales.PORCENTAJE_COBERTURA || 80;
+            let cod = '', obs = '';
+            if (est === 'Reembolsado') {
+                cod = prompt(`Aprobar denuncia y registrar desembolso del ${pct}% (S/ ${monto.toFixed(2)}).\nIngresa N° Operación Yape / Transferencia:`, `DES-${pct}-${Math.floor(10000+Math.random()*90000)}`);
+                if (cod === null) return;
+                obs = `Denuncia aprobada y reembolso del ${pct}% ejecutado (${cod}).`;
+            } else {
+                obs = prompt('Motivo del rechazo:', 'Acta policial inválida.');
+                if (obs === null) return;
+            }
+            fetch(`${API_URL}/admin/siniestros`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id_siniestro: idSin, estado: est, codigo_desembolso: cod, observaciones_admin: obs}) })
+            .then(r => r.json()).then(d => { mostrarAlerta(d.mensaje, true); cargarSiniestrosAdmin(); cargarResumenKPIsAdmin(); });
+        }
+
+        function cargarEstudiantesYCatalogoAdmin() {
+            fetch(`${API_URL}/admin/estudiantes`).then(r => r.json()).then(data => {
+                document.getElementById('tabla-admin-estudiantes').innerHTML = data.map(est => `<tr><td style="font-weight:600;">${est.nombre_completo}</td><td>DNI: ${est.dni}<div style="font-size:0.78rem; color:var(--text-muted);">Cód: ${est.codigo_universitario}</div></td><td>${est.correo_universitario}<div style="font-size:0.78rem; color:var(--text-muted);">${est.telefono}</div></td><td>${est.cuenta_reembolso}</td><td style="font-weight:700;">${est.polizas_activas} activas (${est.total_equipos} eq.)</td><td><span class="badge ${badgeClass(est.estado)}">${est.estado}</span></td><td>${est.estado==='Activo'?`<button class="btn btn-danger-solid btn-sm" onclick="cambiarEstadoEstudiante(${est.id_usuario},'Inactivo')">Desactivar</button>`:`<button class="btn btn-success btn-sm" onclick="cambiarEstadoEstudiante(${est.id_usuario},'Activo')">Activar</button>`}</td></tr>`).join('');
+            });
+            fetch(`${API_URL}/catalogo`).then(r => r.json()).then(data => {
+                catalogoGlobal = data.catalogo || [];
+                document.getElementById('lista-catalogo-admin').innerHTML = catalogoGlobal.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.88rem;"><span><strong>${c.tipo_dispositivo}:</strong> ${c.marca} - ${c.modelo}</span><button class="btn btn-danger btn-sm" onclick="eliminarModeloCatalogo(${c.id_catalogo})"><i class="fas fa-trash"></i></button></div>`).join('');
+                if (data.parametros) actualizarEtiquetasParametros(data.parametros);
+            });
+        }
+
+        function cambiarEstadoEstudiante(idUsu, est) {
+            fetch(`${API_URL}/admin/estudiantes`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id_usuario: idUsu, estado: est}) })
+            .then(r => r.json()).then(d => { mostrarAlerta(d.mensaje, true); cargarEstudiantesYCatalogoAdmin(); });
+        }
+
+        document.getElementById('formNuevoModelo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch(`${API_URL}/admin/catalogo`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({tipo_dispositivo: document.getElementById('cat-tipo').value, marca: document.getElementById('cat-marca').value, modelo: document.getElementById('cat-modelo').value}) })
+            .then(r => r.json()).then(d => { mostrarAlerta(d.mensaje, true); document.getElementById('formNuevoModelo').reset(); cargarEstudiantesYCatalogoAdmin(); });
+        });
+
+        function eliminarModeloCatalogo(idCat) {
+            fetch(`${API_URL}/admin/catalogo?id_catalogo=${idCat}`, { method: 'DELETE' }).then(r => r.json()).then(d => { mostrarAlerta(d.mensaje, true); cargarEstudiantesYCatalogoAdmin(); });
+        }
+
+        document.getElementById('formParametros').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const datos = {
+                accion: 'parametros',
+                PORCENTAJE_COBERTURA: document.getElementById('param-cobertura').value,
+                PORCENTAJE_PRIMA: document.getElementById('param-prima').value,
+                DIAS_MAX_BOLETA: document.getElementById('param-dias').value
+            };
+            fetch(`${API_URL}/admin/catalogo`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(datos) })
+            .then(r => r.json()).then(d => { mostrarAlerta(d.mensaje, true); cargarResumenKPIsAdmin(); cargarSolicitudes(); cargarPolizasAdmin(); cargarSiniestrosAdmin(); });
+        });
+
+        function exportarSolicitudesCSV() {
+            if (!cacheSolicitudesAdmin.length) return mostrarAlerta('Sin datos para exportar.', false);
+            const cab = ['Ticket','Estudiante','DNI','Tipo','Marca','Modelo','IMEI','Compra','Valor','Cuota','Estado'];
+            const filas = cacheSolicitudesAdmin.map(r => [r.codigo_ticket,`"${r.nombre_completo}"`,r.dni,r.tipo_equipo,r.marca,`"${r.modelo}"`,r.nro_serie,r.fecha_compra,r.valor_declarado.toFixed(2),r.prima_mensual.toFixed(2),r.estado]);
+            const csv = 'data:text/csv;charset=utf-8,\uFEFF' + [cab.join(','), ...filas.map(e => e.join(','))].join('\n');
+            const a = document.createElement('a'); a.href = encodeURI(csv); a.download = 'Reporte_Solicitudes_InstaPac.csv'; document.body.appendChild(a); a.click(); a.remove();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            inicializarCatalogoYFechas();
+            const idUsu = localStorage.getItem('id_usuario'), rol = localStorage.getItem('rol'), nom = localStorage.getItem('nombre');
+            if (idUsu && rol) {
+                document.getElementById('user-name-label').innerText = nom || 'Estudiante';
+                document.getElementById('admin-name-label').innerText = nom || 'Administrador';
+                if (rol === 'admin') { mostrarPanel('panel-admin'); cambiarVistaAdmin('dashboard'); }
+                else { mostrarPanel('panel-cliente'); cambiarVistaCliente('resumen'); }
+            }
+        });
+    </script>
+</body>
+</html>
